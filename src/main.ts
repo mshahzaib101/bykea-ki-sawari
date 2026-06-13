@@ -909,8 +909,12 @@ function finishRide() {
   // replays of the same star tier don't repeat the same line/clip.
   const tier = mood >= 4.5 ? 0 : mood >= 3.5 ? 1 : mood >= 2.5 ? 2 : 3;
   const who = castPick === 'ganji' ? 'ganji' : 'rishta';
-  const opts = (castPick === 'ganji' ? GANJI_REVIEWS : RISHTA_REVIEWS)[tier];
-  const j = pickLine(`${who}_rev${tier}`, opts.length);
+  // tolerate either shape: string[][] (tier → variants) or a legacy flat
+  // string[] (one line per tier). Guards against a half-applied refactor ever
+  // char-indexing a string into the review box again.
+  const raw = (castPick === 'ganji' ? GANJI_REVIEWS : RISHTA_REVIEWS)[tier] as string | string[];
+  const opts = Array.isArray(raw) ? raw : [raw];
+  const j = opts.length > 1 ? pickLine(`${who}_rev${tier}`, opts.length) : 0;
   const reviewId = j === 0 ? `${who}_review${tier}` : `${who}_review${tier}_${j}`;
   ui.showCard(stats, `"${opts[j]}"`, makeRoast(stats), plateName);
   state = 'card';
