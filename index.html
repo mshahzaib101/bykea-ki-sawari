@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Bykea ki Sawari — ek Karachi wali ride 🏍️</title>
+    <meta name="description" content="Pick up sawariyan at Empress Market, survive Saddar traffic, drop them at Teen Talwar. A tiny Karachi bike game." />
+
+    <!-- Social share card. After your first Vercel deploy, swap the domain below
+         for your real URL so 𝕏 / WhatsApp render the big image preview. -->
+    <meta property="og:title" content="Bykea ki Sawari — ek Karachi wali ride 🏍️" />
+    <meta property="og:description" content="Empress Market → Teen Talwar. Haggle the fare, dodge the W-11, honk like you mean it." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bykea-ki-sawari.vercel.app/" />
+    <meta property="og:image" content="https://bykea-ki-sawari.vercel.app/start-art.jpg" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Bykea ki Sawari — ek Karachi wali ride 🏍️" />
+    <meta name="twitter:description" content="Empress Market → Teen Talwar. Haggle the fare, dodge the W-11, honk like you mean it." />
+    <meta name="twitter:image" content="https://bykea-ki-sawari.vercel.app/start-art.jpg" />
+
+    <!-- mobile / installable PWA -->
+    <meta name="theme-color" content="#0b4f4a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sawari" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Bungee&family=Karla:ital,wght@0,400;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+    <style>
+      /* critical: the real stylesheet arrives with the JS bundle — keep the app
+         hidden (on the brand teal) until then so unstyled UI never flashes */
+      html, body { height: 100%; margin: 0; background: #073835; }
+      #app { visibility: hidden; }
+      /* instant boot splash — shows before the bundle/CSS land, removed by JS */
+      #boot {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 18px; background: #073835; color: #fff6e0;
+        font-family: "Lilita One", system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+      }
+      #boot .boot-bike { font-size: 56px; animation: boot-rev 1s ease-in-out infinite; }
+      #boot .boot-text { font-size: 15px; letter-spacing: .14em; opacity: .8; text-transform: uppercase; }
+      @keyframes boot-rev { 0%,100% { transform: translateX(-6px) rotate(-3deg); } 50% { transform: translateX(6px) rotate(3deg); } }
+      @media (prefers-reduced-motion: reduce) { #boot .boot-bike { animation: none; } }
+      /* WebGL-unsupported fallback */
+      #webgl-fallback {
+        position: fixed; inset: 0; z-index: 10000;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 14px; padding: 24px; text-align: center; background: #073835; color: #fff6e0;
+        font-family: "Karla", system-ui, sans-serif;
+      }
+      #webgl-fallback.hidden { display: none; }
+      #webgl-fallback h1 { font-family: "Lilita One", sans-serif; font-size: 24px; }
+      #webgl-fallback p { max-width: 360px; line-height: 1.5; opacity: .85; font-size: 15px; }
+    </style>
+  </head>
+  <body>
+    <!-- shows instantly (before the JS/CSS bundle), removed by main.ts on boot -->
+    <div id="boot">
+      <div class="boot-bike">🏍️</div>
+      <div class="boot-text">Sawari aa rahi hai…</div>
+    </div>
+
+    <!-- shown only if the device/browser can't do WebGL -->
+    <div id="webgl-fallback" class="hidden">
+      <h1>🏍️ Bykea ki Sawari</h1>
+      <p>Yeh game chalane ke liye WebGL chahiye, jo is browser mein band ya unavailable hai. Latest Chrome ya Safari mein khol ke dekho.</p>
+    </div>
+
+    <noscript>
+      <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;background:#073835;color:#fff6e0;font-family:sans-serif;">
+        Bykea ki Sawari needs JavaScript enabled to play.
+      </div>
+    </noscript>
+
+    <div id="app">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- ============ START SCREEN ============ -->
+      <div id="screen-start" class="screen">
+        <div class="jhalar"></div>
+
+        <div class="ticker" aria-hidden="true">
+          <div class="ticker-track">
+            <span>EMPRESS MARKET ⟶ TEEN TALWAR&ensp;✦&ensp;HORN OK PLEASE&ensp;✦&ensp;DEKH KE CHALO BHAI&ensp;✦&ensp;1 RUN = 1 TWEET&ensp;✦&ensp;CHAI BREAK ALLOWED&ensp;✦&ensp;</span>
+            <span>EMPRESS MARKET ⟶ TEEN TALWAR&ensp;✦&ensp;HORN OK PLEASE&ensp;✦&ensp;DEKH KE CHALO BHAI&ensp;✦&ensp;1 RUN = 1 TWEET&ensp;✦&ensp;CHAI BREAK ALLOWED&ensp;✦&ensp;</span>
+          </div>
+        </div>
+
+        <div class="start-inner">
+          <h1 class="title">
+            <span class="title-lockup">
+              <img class="bykea-logo" src="/bykea-logo.png" alt="BYKEA" width="512" height="170" />
+              <span class="title-ki">KI</span>
+            </span>
+            <span class="title-main">SAWARI</span>
+          </h1>
+          <p class="collab-tag">✦ ek Karachi ride ✦</p>
+
+          <div class="art-frame">
+            <img class="start-art" src="/start-art.jpg" alt="Empress Market se Teen Talwar tak" width="1280" height="720" fetchpriority="high" />
+            <span class="tape tape-a"></span><span class="tape tape-b"></span>
+            <span class="art-tag">Saddar ⟶ Clifton 💨</span>
+          </div>
+
+          <div class="char-pick">
+            <label>Aaj ki sawari kaun? <span class="req">— pehle ek chuno</span></label>
+            <div class="char-row">
+              <button type="button" class="char-card" data-char="ganji">
+                <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ganji Swag">
+                  <defs><clipPath id="clip-gs"><circle cx="60" cy="60" r="53"/></clipPath></defs>
+                  <circle cx="60" cy="60" r="55" fill="#ff7a2f" stroke="#221409" stroke-width="4"/>
+                  <g clip-path="url(#clip-gs)">
+                    <g opacity="0.16" stroke="#fff6e0" stroke-width="6">
+                      <path d="M60 60 L10 18"/><path d="M60 60 L60 -6"/><path d="M60 60 L110 18"/>
+                      <path d="M60 60 L2 60"/><path d="M60 60 L118 60"/>
+                    </g>
+                    <path d="M14 122 Q18 90 60 88 Q102 90 106 122 Z" fill="#262626" stroke="#221409" stroke-width="3"/>
+                    <path d="M44 94 Q60 106 76 94" fill="none" stroke="#ffc63d" stroke-width="3.5" stroke-dasharray="1 4" stroke-linecap="round"/>
+                    <path d="M50 72 H70 V90 H50 Z" fill="#c98e63" stroke="#221409" stroke-width="3"/>
+                    <ellipse cx="60" cy="50" rx="25" ry="27" fill="#c98e63" stroke="#221409" stroke-width="3"/>
+                    <circle cx="35" cy="52" r="5.5" fill="#c98e63" stroke="#221409" stroke-width="3"/>
+                    <circle cx="85" cy="52" r="5.5" fill="#c98e63" stroke="#221409" stroke-width="3"/>
+                    <path d="M45 30 Q55 22 67 27" stroke="#fff6e0" stroke-width="4.5" fill="none" stroke-linecap="round" opacity="0.9"/>
+                    <circle cx="72" cy="31" r="2.4" fill="#fff6e0" opacity="0.9"/>
+                    <path d="M36 50 Q35 78 47 86 Q60 93 73 86 Q85 78 84 50 Q80 60 60 60 Q40 60 36 50 Z" fill="#241a12" stroke="#221409" stroke-width="3"/>
+                    <path d="M48 64 Q60 70 72 64 Q66 61 60 61 Q54 61 48 64 Z" fill="#241a12"/>
+                    <ellipse cx="60" cy="75" rx="9" ry="6" fill="#7c2f2f" stroke="#221409" stroke-width="2.5"/>
+                    <rect x="54" y="70" width="12" height="4" rx="2" fill="#fff6e0"/>
+                    <rect x="39" y="41" width="18" height="14" rx="4.5" fill="rgba(255,255,255,0.14)" stroke="#221409" stroke-width="3"/>
+                    <rect x="63" y="41" width="18" height="14" rx="4.5" fill="rgba(255,255,255,0.14)" stroke="#221409" stroke-width="3"/>
+                    <path d="M57 47 H63" stroke="#221409" stroke-width="3"/>
+                    <path d="M39 47 L35 49 M81 47 L85 49" stroke="#221409" stroke-width="3"/>
+                    <circle cx="48" cy="48" r="2.6" fill="#221409"/>
+                    <circle cx="72" cy="48" r="2.6" fill="#221409"/>
+                    <path d="M41 36 L56 40" stroke="#241a12" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M79 36 L64 40" stroke="#241a12" stroke-width="4" stroke-linecap="round"/>
+                    <g stroke="#ff2e88" stroke-width="3" stroke-linecap="round">
+                      <path d="M92 26 L97 21"/><path d="M95 32 L101 30"/><path d="M88 21 L90 15"/>
+                    </g>
+                  </g>
+                </svg>
+                <span class="char-name">GANJI SWAG</span>
+                <span class="char-tag">"yeh traffic, yaar!" 🤬</span>
+              </button>
+              <button type="button" class="char-card" data-char="aunty">
+                <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rishta Wali Aunty">
+                  <defs><clipPath id="clip-ra"><circle cx="60" cy="60" r="53"/></clipPath></defs>
+                  <circle cx="60" cy="60" r="55" fill="#ff2e88" stroke="#221409" stroke-width="4"/>
+                  <g clip-path="url(#clip-ra)">
+                    <g opacity="0.15" stroke="#fff6e0" stroke-width="6">
+                      <path d="M60 60 L10 18"/><path d="M60 60 L60 -6"/><path d="M60 60 L110 18"/>
+                      <path d="M60 60 L2 60"/><path d="M60 60 L118 60"/>
+                    </g>
+                    <path d="M12 122 Q18 88 60 86 Q102 88 108 122 Z" fill="#a8326e" stroke="#221409" stroke-width="3"/>
+                    <path d="M46 90 Q60 100 74 90" fill="none" stroke="#ffc63d" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M51 72 H69 V88 H51 Z" fill="#d9a066" stroke="#221409" stroke-width="3"/>
+                    <ellipse cx="60" cy="50" rx="31" ry="33" fill="#7a1f4e" stroke="#221409" stroke-width="3"/>
+                    <ellipse cx="60" cy="52" rx="22" ry="24" fill="#d9a066" stroke="#221409" stroke-width="3"/>
+                    <path d="M40 40 Q50 29 60 29 Q70 29 80 40 Q70 33 60 33 Q50 33 40 40 Z" fill="#241a12"/>
+                    <path d="M29 58 Q26 18 60 16 Q94 18 91 58 Q88 30 60 28 Q32 30 29 58 Z" fill="#d8b04a" stroke="#221409" stroke-width="3"/>
+                    <circle cx="36" cy="58" r="3" fill="#ffc63d" stroke="#221409" stroke-width="2"/>
+                    <path d="M32.5 61 Q36 68 39.5 61 Z" fill="#ffc63d" stroke="#221409" stroke-width="2"/>
+                    <circle cx="84" cy="58" r="3" fill="#ffc63d" stroke="#221409" stroke-width="2"/>
+                    <path d="M80.5 61 Q84 68 87.5 61 Z" fill="#ffc63d" stroke="#221409" stroke-width="2"/>
+                    <ellipse cx="49" cy="49" rx="9" ry="6.5" fill="rgba(255,255,255,0.16)" stroke="#221409" stroke-width="3"/>
+                    <ellipse cx="71" cy="49" rx="9" ry="6.5" fill="rgba(255,255,255,0.16)" stroke="#221409" stroke-width="3"/>
+                    <path d="M58 49 H62" stroke="#221409" stroke-width="3"/>
+                    <path d="M40 45 L36.5 41 M80 45 L83.5 41" stroke="#221409" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M41 51 Q35 56 36 62" fill="none" stroke="#ffc63d" stroke-width="2" stroke-dasharray="1 3"/>
+                    <path d="M79 51 Q85 56 84 62" fill="none" stroke="#ffc63d" stroke-width="2" stroke-dasharray="1 3"/>
+                    <circle cx="49" cy="49" r="2.4" fill="#221409"/>
+                    <circle cx="71" cy="49" r="2.4" fill="#221409"/>
+                    <path d="M42 38 Q49 33 56 38" stroke="#241a12" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                    <path d="M64 40 L78 40" stroke="#241a12" stroke-width="3.5" stroke-linecap="round"/>
+                    <circle cx="63.5" cy="57" r="1.6" fill="#ffc63d"/>
+                    <path d="M53 66 Q60 70 67 66" stroke="#8a3030" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                    <g transform="rotate(-12 28 102)">
+                      <rect x="16" y="88" width="24" height="28" rx="2" fill="#fff6e0" stroke="#221409" stroke-width="3"/>
+                      <circle cx="28" cy="98" r="5" fill="#c98e63" stroke="#221409" stroke-width="2"/>
+                      <rect x="22" y="105" width="12" height="6" rx="2" fill="#2c6dbf" stroke="#221409" stroke-width="2"/>
+                    </g>
+                    <g>
+                      <path d="M84 98 h22 v8 q0 9 -11 9 q-11 0 -11 -9 Z" fill="#fff6e0" stroke="#221409" stroke-width="3"/>
+                      <path d="M106 100 q8 2 0 9" fill="none" stroke="#221409" stroke-width="3"/>
+                      <path d="M90 93 q2 -4 0 -7 M97 93 q2 -4 0 -7" stroke="#fff6e0" stroke-width="2.5" fill="none" opacity="0.85"/>
+                    </g>
+                  </g>
+                </svg>
+                <span class="char-name">RISHTA AUNTY</span>
+                <span class="char-tag">"beta, shaadi kab?" 💍</span>
+              </button>
+            </div>
+            <p id="char-say" class="char-say hidden"></p>
+          </div>
+
+          <div class="plate-entry">
+            <label for="player-name">Number plate pe kya likhein?</label>
+            <div class="plate">
+              <span class="plate-region">KHI</span>
+              <input id="player-name" type="text" maxlength="12" placeholder="@yourhandle" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+
+          <p id="pick-hint" class="pick-hint">👆 Pehle apni sawari select karo</p>
+          <button id="btn-start" class="btn btn-big locked">SAWARI SHURU&nbsp;🏍️</button>
+
+          <p class="hint">
+            <span class="hint-desktop">← → steer &nbsp;·&nbsp; ↑ race &nbsp;·&nbsp; SPACE horn</span>
+            <span class="hint-mobile">tap left/right to steer &nbsp;·&nbsp; hold RACE &nbsp;·&nbsp; tap HORN</span>
+          </p>
+        </div>
+        <p class="credit">made in Karachi with Fable 5 💚</p>
+      </div>
+
+      <!-- ============ HAGGLE SHEET ============ -->
+      <div id="screen-haggle" class="sheet hidden">
+        <div class="sheet-card">
+          <div class="pax-row">
+            <div class="pax-avatar" id="haggle-avatar">🧕</div>
+            <div>
+              <p class="pax-name" id="haggle-name">Shamim Aunty</p>
+              <p class="pax-line" id="haggle-line">"Beta, Teen Talwar chalo ge?"</p>
+            </div>
+          </div>
+          <p class="fare-offer">Offer: <strong id="haggle-fare">Rs 150</strong></p>
+          <div class="sheet-btns">
+            <button id="btn-accept" class="btn btn-green">Theek hai ✓</button>
+            <button id="btn-counter" class="btn btn-yellow" >Itne mein nahi bhai 🤨</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ HUD ============ -->
+      <div id="hud" class="hidden">
+        <div class="hud-top">
+          <div class="hud-left">
+            <div class="hud-pill fare-pill">Rs <span id="hud-fare">0</span></div>
+            <div class="hud-pill bp-pill hidden" id="bp-pill">
+              <span class="bp-label">BP</span>
+              <div class="bp-bar"><div class="bp-fill" id="bp-fill"></div></div>
+            </div>
+          </div>
+          <div class="route-bar">
+            <div class="route-fill" id="route-fill"></div>
+            <span class="route-stop" style="left:0%"   title="Empress Market">🕰️</span>
+            <span class="route-stop" style="left:26%"  title="Regal Chowk">📚</span>
+            <span class="route-stop" style="left:50%"  title="Metropole">🏛️</span>
+            <span class="route-stop" style="left:72%"  title="Clifton Bridge">🌉</span>
+            <span class="route-stop" style="left:100%" title="Teen Talwar">⚔️</span>
+            <span class="route-bike" id="route-bike">🏍️</span>
+          </div>
+          <div class="hud-pill stars-pill" id="hud-stars">★★★★★</div>
+        </div>
+
+        <div id="bubble" class="bubble hidden">
+          <span id="bubble-avatar">🧕</span>
+          <p id="bubble-text">Aaram se beta!</p>
+        </div>
+
+        <div id="toasts"></div>
+
+        <div id="landmark" class="landmark hidden">
+          <div class="lm-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#ffffff">
+              <path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>
+            </svg>
+          </div>
+          <div class="lm-text">
+            <p class="lm-name" id="landmark-name">Empress Market</p>
+            <p class="lm-sub" id="landmark-sub">Saddar, Karachi</p>
+          </div>
+        </div>
+
+        <button id="btn-boost" class="ctl ctl-left" aria-label="Race">
+          <span class="ctl-ring"></span>
+          <span class="ctl-ico">⚡</span>
+          <span class="ctl-lbl">RACE</span>
+        </button>
+        <button id="btn-horn" class="ctl ctl-right" aria-label="Horn">
+          <span class="ctl-ring"></span>
+          <span class="ctl-ico">📣</span>
+          <span class="ctl-lbl">HORN</span>
+        </button>
+        <button id="btn-pause" class="pause-btn">⏸</button>
+
+        <!-- one-time mobile steering tip (shown on the first ride, touch only) -->
+        <div id="steer-coach" class="steer-coach hidden" aria-hidden="true">
+          <div class="coach-banner">Steer karne ke liye side tap karo 👇</div>
+          <div class="coach-half coach-left">
+            <span class="coach-arrow">👈</span>
+            <span class="coach-label">TAP TO GO LEFT</span>
+          </div>
+          <div class="coach-half coach-right">
+            <span class="coach-arrow">👉</span>
+            <span class="coach-label">TAP TO GO RIGHT</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- boost warp lines (toggled on while racing) -->
+      <div id="speed-fx" aria-hidden="true"></div>
+
+      <!-- ============ PAUSE ============ -->
+      <div id="screen-pause" class="screen hidden">
+        <div class="jhalar"></div>
+        <div class="start-inner">
+          <h2 class="pause-title">CHAI BREAK ☕</h2>
+          <p class="tagline">sawari intezar karegi, fikar nahi</p>
+          <button id="btn-resume" class="btn btn-green btn-big">CHALTE RAHO ▶</button>
+          <button id="btn-quit" class="btn btn-yellow">Ghar wapis 🏠</button>
+        </div>
+      </div>
+
+      <!-- ============ SCORE CARD ============ -->
+      <div id="screen-card" class="screen hidden">
+        <div class="jhalar"></div>
+        <div class="truck-card">
+          <p class="card-top">— SAWARI MUKAMMAL —</p>
+          <h2 class="card-amount">Rs <span id="card-fare">0</span></h2>
+          <p class="card-stars" id="card-stars">★★★★☆</p>
+
+          <div class="card-review">
+            <p class="review-label"><span id="card-pax">Shamim Aunty</span> ne likha:</p>
+            <p class="review-text" id="card-review">"Beta ne 3 gaariyon ko chhua. Pohanch gaye, shukar hai. 3 stars."</p>
+          </div>
+
+          <p class="card-roast" id="card-roast">"BHAI AAP RICKSHAW HI LE LO."</p>
+
+          <div class="card-stats">
+            <div><b id="stat-time">0:00</b><span>time</span></div>
+            <div><b id="stat-horns">0</b><span>horns</span></div>
+            <div><b id="stat-bumps">0</b><span>takkrein</span></div>
+            <div><b id="stat-kata">0</b><span>kata ⚡</span></div>
+          </div>
+
+          <div class="card-plate"><span class="plate-region">KHI</span><span id="card-plate-name">RIDER</span></div>
+
+          <div class="sheet-btns">
+            <button id="btn-share" class="btn btn-green">Post on 𝕏</button>
+            <button id="btn-again" class="btn btn-yellow">Agli sawari 🔁</button>
+          </div>
+          <button id="btn-change-char" class="btn-link">↩ Character badlo</button>
+          <p class="best-line" id="best-line"></p>
+        </div>
+      </div>
+
+      <button id="btn-mute" class="mute">🔊</button>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+    <!-- service worker: caches assets so repeat plays + revisits are instant
+         (and playable offline). Production only; dev keeps hot-reload clean. -->
+    <script>
+      if ('serviceWorker' in navigator && location.hostname !== 'localhost' && location.protocol === 'https:') {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
