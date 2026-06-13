@@ -184,22 +184,32 @@ export class UI {
   }
 
   private steerCoachTimer: number | null = null;
+  private steerCoachShownAt = 0;
+  // keep the tip on screen at least this long so an instant first tap (or the
+  // accept-button gesture bleeding through) can't flash it away unread
+  private static readonly COACH_MIN_MS = 2200;
   /** mobile steering tip — shown at the start of every ride on touch devices */
   showSteerCoach() {
     const touch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
     if (!touch) return; // desktop steers with arrow keys — tip doesn't apply
     el('steer-coach').classList.remove('hidden', 'coach-out');
+    this.steerCoachShownAt = performance.now();
     if (this.steerCoachTimer !== null) clearTimeout(this.steerCoachTimer);
-    this.steerCoachTimer = window.setTimeout(() => this.hideSteerCoach(), 1575); // auto-dismiss (halved)
+    this.steerCoachTimer = window.setTimeout(() => this.hideSteerCoach(), 4200); // auto-dismiss if untouched
   }
   /** dismiss the steering tip (first steer tap or timeout); fades out */
   hideSteerCoach() {
     const c = el('steer-coach');
     if (c.classList.contains('hidden') || c.classList.contains('coach-out')) return;
-    if (this.steerCoachTimer !== null) {
-      clearTimeout(this.steerCoachTimer);
-      this.steerCoachTimer = null;
+    // too soon to read? defer the hide until the minimum has elapsed instead of
+    // flashing it away (the coach is pointer-events:none, so this never blocks steering)
+    const remaining = UI.COACH_MIN_MS - (performance.now() - this.steerCoachShownAt);
+    if (this.steerCoachTimer !== null) clearTimeout(this.steerCoachTimer);
+    if (remaining > 0) {
+      this.steerCoachTimer = window.setTimeout(() => this.hideSteerCoach(), remaining);
+      return;
     }
+    this.steerCoachTimer = null;
     c.classList.add('coach-out');
     window.setTimeout(() => c.classList.add('hidden'), 350);
   }
